@@ -56,6 +56,7 @@ func upload(w http.ResponseWriter, r *http.Request) {
 	if _, err := os.Stat(savepath); os.IsNotExist(err) {
 		if err := os.MkdirAll(filepath.Dir(savepath), 0755); err != nil {
 			errit(w, "CANT_CREATE_DIR", http.StatusInternalServerError)
+			return
 		}
 	}
 
