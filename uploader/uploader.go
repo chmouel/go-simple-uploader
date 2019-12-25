@@ -30,8 +30,6 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	defer file.Close()
 
-	fmt.Println(r.RemoteAddr)
-
 	fileBytes, err := ioutil.ReadAll(file)
 	if err != nil {
 		errit(w, "INVALID_FILE", http.StatusBadRequest)
@@ -49,7 +47,7 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 	abspath, _ := filepath.Abs(savepath)
 	absuploaddir, _ := filepath.Abs(DIRECTORY)
 	if !strings.HasPrefix(abspath, absuploaddir) {
-		errit(w, "INVALID_PATH", http.StatusBadGateway)
+		errit(w, "INVALID_PATH", http.StatusBadRequest)
 		return
 	}
 
