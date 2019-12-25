@@ -21,7 +21,7 @@ func errit(w http.ResponseWriter, message string, statusCode int) {
 	w.Write([]byte(message))
 }
 
-func upload(w http.ResponseWriter, r *http.Request) {
+func UploadHandler(w http.ResponseWriter, r *http.Request) {
 	// parse and validate file and post parameters
 	file, _, err := r.FormFile("file")
 	if err != nil {
@@ -73,8 +73,19 @@ func upload(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.Write([]byte("👍"))
-	// save_path = filepath.Join()
+}
 
+func SetupMyHandlers() *http.ServeMux {
+	mux := http.NewServeMux()
+
+	// setup dynamic handlers
+	mux.HandleFunc("/upload/", UploadHandler)
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(404)
+		w.Write([]byte("😅"))
+	})
+
+	return mux
 }
 
 func Uploader() error {
@@ -90,7 +101,7 @@ func Uploader() error {
 		PORT = os.Getenv("UPLOADER_PORT")
 	}
 
-	http.HandleFunc("/upload", upload)
+	mymux := SetupMyHandlers()
 	log.Printf("Starting uploader on %s:%s", HOST, PORT)
-	return (http.ListenAndServe(fmt.Sprintf("%s:%s", HOST, PORT), nil))
+	return (http.ListenAndServe(fmt.Sprintf("%s:%s", HOST, PORT), mymux))
 }
