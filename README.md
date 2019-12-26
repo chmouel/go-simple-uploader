@@ -13,10 +13,10 @@ I mainly deploy it to OpenShift which handles for me the building of the source
 the deployment with a nginx server and observability etc.. See the OpenShift
 deployment section of this document.
 
-## Build
+## Install
 
 ```shell
-go build github.com/chmouel/go-simple-uploader
+go install github.com/chmouel/go-simple-uploader
 ```
 
 ### Configuration
