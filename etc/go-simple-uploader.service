@@ -1,0 +1,20 @@
+[Unit]
+Description=GoLang Simple Uploader
+After=syslog.target
+
+[Service]
+User=user
+Group=group
+Environment=UPLOADER_DIRECTORY=/var/www/uploader
+Environment=UPLOADER_PORT=8000
+PIDFile=/run/%I.pid
+RemainAfterExit=yes
+ExecStart=/usr/local/bin/go-simple-uploader
+ExecReload=/bin/kill -HUP $MAINPID
+ExecStop=/bin/kill -INT $MAINPID
+Restart=always
+StandardError=syslog
+KillSignal=SIGQUIT
+
+[Install]
+WantedBy=multi-user.target
