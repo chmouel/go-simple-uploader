@@ -6,8 +6,8 @@
 
 # GO Simple Uploader
 
-A simple uploader in GO, is is meant to be deployed in a container behind a
-nginx deployment but you can deploy it as you wish.
+A simple uploader in GO, meant to be deployed in a container behind a
+nginx protected environment, but you can deploy it as you wish.
 
 I mainly deploy it to OpenShift which handles for me the building of the source
 the deployment with a nginx server and observability etc.. See the OpenShift
