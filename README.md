@@ -54,7 +54,7 @@ You need first to create a a username password with :
 htpasswd -b -c openshift/config/osinstall.htpasswd username password
 ```
 
-Then you just use the makefile target, build and deploy you just need :
+Then you just use the makefile target to build and deploy :
 
 ```
 oc new-project uploader && make deploy
