@@ -19,7 +19,7 @@ var (
 
 func errit(w http.ResponseWriter, message string, statusCode int) {
 	w.WriteHeader(http.StatusBadRequest)
-	w.Write([]byte(message))
+	_, _ = w.Write([]byte(message))
 }
 
 func uploadHandler(w http.ResponseWriter, r *http.Request) {
@@ -71,7 +71,7 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 		errit(w, "CANT_WRITE_FILE", http.StatusInternalServerError)
 		return
 	}
-	w.Write([]byte("👍"))
+	_, _ = w.Write([]byte("👍"))
 }
 
 func setupMyHandlers() *http.ServeMux {
@@ -81,7 +81,7 @@ func setupMyHandlers() *http.ServeMux {
 	mux.HandleFunc("/upload/", uploadHandler)
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(404)
-		w.Write([]byte("😅"))
+		_, _ = w.Write([]byte("😅"))
 	})
 
 	return mux
