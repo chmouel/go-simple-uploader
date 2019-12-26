@@ -30,10 +30,10 @@ func TestMultipleDirectory(t *testing.T) {
 
 	r := httpUploadMultiPart(t, tempdir, expectedSring, targetPath)
 
-	DIRECTORY = tempdir
+	directory = tempdir
 
 	w := httptest.NewRecorder()
-	handler := http.HandlerFunc(UploadHandler)
+	handler := http.HandlerFunc(uploadHandler)
 	handler.ServeHTTP(w, r)
 
 	resp := w.Result()
@@ -57,10 +57,10 @@ func TestUploaderSimple(t *testing.T) {
 
 	r := httpUploadMultiPart(t, tempdir, expectedSring, targetPath)
 
-	DIRECTORY = tempdir
+	directory = tempdir
 
 	w := httptest.NewRecorder()
-	handler := http.HandlerFunc(UploadHandler)
+	handler := http.HandlerFunc(uploadHandler)
 	handler.ServeHTTP(w, r)
 
 	resp := w.Result()
@@ -84,10 +84,10 @@ func TestUploaderTraversal(t *testing.T) {
 
 	r := httpUploadMultiPart(t, tempdir, expectedSring, targetPath)
 
-	DIRECTORY = tempdir
+	directory = tempdir
 
 	w := httptest.NewRecorder()
-	handler := http.HandlerFunc(UploadHandler)
+	handler := http.HandlerFunc(uploadHandler)
 	handler.ServeHTTP(w, r)
 
 	resp := w.Result()

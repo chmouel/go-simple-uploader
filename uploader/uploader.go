@@ -11,9 +11,10 @@ import (
 )
 
 var (
-	HOST      = "localhost"
-	PORT      = "8080"
-	DIRECTORY = "./pub"
+	/// HOST where to bind the upload
+	host      = "localhost"
+	port      = "8080"
+	directory = "./pub"
 )
 
 func errit(w http.ResponseWriter, message string, statusCode int) {
@@ -21,7 +22,7 @@ func errit(w http.ResponseWriter, message string, statusCode int) {
 	w.Write([]byte(message))
 }
 
-func UploadHandler(w http.ResponseWriter, r *http.Request) {
+func uploadHandler(w http.ResponseWriter, r *http.Request) {
 	// parse and validate file and post parameters
 	file, _, err := r.FormFile("file")
 	if err != nil {
@@ -43,9 +44,9 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Directory traversal detection
-	savepath := filepath.Join(DIRECTORY, path)
+	savepath := filepath.Join(directory, path)
 	abspath, _ := filepath.Abs(savepath)
-	absuploaddir, _ := filepath.Abs(DIRECTORY)
+	absuploaddir, _ := filepath.Abs(directory)
 	if !strings.HasPrefix(abspath, absuploaddir) {
 		errit(w, "INVALID_PATH", http.StatusBadRequest)
 		return
@@ -73,11 +74,11 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("👍"))
 }
 
-func SetupMyHandlers() *http.ServeMux {
+func setupMyHandlers() *http.ServeMux {
 	mux := http.NewServeMux()
 
 	// setup dynamic handlers
-	mux.HandleFunc("/upload/", UploadHandler)
+	mux.HandleFunc("/upload/", uploadHandler)
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(404)
 		w.Write([]byte("😅"))
@@ -86,20 +87,21 @@ func SetupMyHandlers() *http.ServeMux {
 	return mux
 }
 
+// Uploader simple uploader
 func Uploader() error {
 	if os.Getenv("UPLOADER_DIRECTORY") != "" {
-		DIRECTORY = os.Getenv("UPLOADER_DIRECTORY")
+		directory = os.Getenv("UPLOADER_DIRECTORY")
 	}
 
 	if os.Getenv("UPLOADER_HOST") != "" {
-		HOST = os.Getenv("UPLOADER_HOST")
+		host = os.Getenv("UPLOADER_HOST")
 	}
 
 	if os.Getenv("UPLOADER_PORT") != "" {
-		PORT = os.Getenv("UPLOADER_PORT")
+		port = os.Getenv("UPLOADER_PORT")
 	}
 
-	mymux := SetupMyHandlers()
-	log.Printf("Starting uploader on %s:%s", HOST, PORT)
-	return (http.ListenAndServe(fmt.Sprintf("%s:%s", HOST, PORT), mymux))
+	mymux := setupMyHandlers()
+	log.Printf("Starting uploader on %s:%s", host, port)
+	return (http.ListenAndServe(fmt.Sprintf("%s:%s", host, port), mymux))
 }
