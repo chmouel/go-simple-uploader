@@ -2,12 +2,14 @@ package uploader
 
 import (
 	"fmt"
-	"io/ioutil"
-	"log"
+	"io"
 	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/labstack/echo"
+	"github.com/labstack/echo/middleware"
 )
 
 var (
@@ -22,25 +24,16 @@ func errit(w http.ResponseWriter, message string, statusCode int) {
 	_, _ = w.Write([]byte(message))
 }
 
-func uploadHandler(w http.ResponseWriter, r *http.Request) {
+func upload(c echo.Context) error {
 	// parse and validate file and post parameters
-	file, _, err := r.FormFile("file")
+	file, err := c.FormFile("file")
 	if err != nil {
-		errit(w, "INVALID_FILE", http.StatusBadRequest)
-		return
-	}
-	defer file.Close()
-
-	fileBytes, err := ioutil.ReadAll(file)
-	if err != nil {
-		errit(w, "INVALID_FILE", http.StatusBadRequest)
-		return
+		return err
 	}
 
-	path := r.FormValue("path")
+	path := c.FormValue("path")
 	if err != nil {
-		errit(w, "INVALID_PATH", http.StatusBadRequest)
-		return
+		return err
 	}
 
 	// Directory traversal detection
@@ -48,46 +41,39 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 	abspath, _ := filepath.Abs(savepath)
 	absuploaddir, _ := filepath.Abs(directory)
 	if !strings.HasPrefix(abspath, absuploaddir) {
-		errit(w, "INVALID_PATH", http.StatusBadRequest)
-		return
+		fmt.Println(absuploaddir, abspath)
+		return echo.NewHTTPError(http.StatusForbidden, "DENIED: You should not upload outside the upload directory.")
 	}
 
 	if _, err := os.Stat(savepath); os.IsNotExist(err) {
 		if err := os.MkdirAll(filepath.Dir(savepath), 0755); err != nil {
-			errit(w, "CANT_CREATE_DIR", http.StatusInternalServerError)
-			return
+			return err
 		}
 	}
 
-	newFile, err := os.Create(abspath)
-	fmt.Println("Saving file to " + abspath)
+	src, err := file.Open()
 	if err != nil {
-		fmt.Println(err)
-		errit(w, "CANT_WRITE_FILE", http.StatusInternalServerError)
-		return
+		return err
 	}
-	defer newFile.Close()
-	if _, err := newFile.Write(fileBytes); err != nil || newFile.Close() != nil {
-		errit(w, "CANT_WRITE_FILE", http.StatusInternalServerError)
-		return
+	defer src.Close()
+
+	dst, err := os.Create(savepath)
+	if err != nil {
+		return err
 	}
-	_, _ = w.Write([]byte("👍"))
+	defer dst.Close()
+
+	// Copy
+	if _, err = io.Copy(dst, src); err != nil {
+		return err
+	}
+
+	return c.HTML(
+		http.StatusCreated,
+		fmt.Sprintf("<h1>🚀 File has been uploaded to %s</h1>",
+			savepath))
 }
 
-func setupMyHandlers() *http.ServeMux {
-	mux := http.NewServeMux()
-
-	// setup dynamic handlers
-	mux.HandleFunc("/upload/", uploadHandler)
-	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(404)
-		_, _ = w.Write([]byte("😅"))
-	})
-
-	return mux
-}
-
-// Uploader simple uploader
 func Uploader() error {
 	if os.Getenv("UPLOADER_DIRECTORY") != "" {
 		directory = os.Getenv("UPLOADER_DIRECTORY")
@@ -101,7 +87,13 @@ func Uploader() error {
 		port = os.Getenv("UPLOADER_PORT")
 	}
 
-	mymux := setupMyHandlers()
-	log.Printf("Starting uploader on %s:%s", host, port)
-	return (http.ListenAndServe(fmt.Sprintf("%s:%s", host, port), mymux))
+	e := echo.New()
+
+	e.Use(middleware.Logger())
+	e.Use(middleware.Recover())
+
+	e.Static("/", "public")
+	e.POST("/upload", upload)
+
+	return (e.Start(fmt.Sprintf("%s:%s", host, port)))
 }

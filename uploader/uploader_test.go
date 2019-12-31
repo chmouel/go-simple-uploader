@@ -8,6 +8,9 @@ import (
 	"net/http/httptest"
 	"path/filepath"
 	"testing"
+
+	"github.com/labstack/echo"
+	"github.com/stretchr/testify/assert"
 )
 
 func httpUploadMultiPart(t *testing.T, tempdir, s, p string) *http.Request {
@@ -18,7 +21,7 @@ func httpUploadMultiPart(t *testing.T, tempdir, s, p string) *http.Request {
 	_ = writer.WriteField("path", p)
 	_ = writer.Close()
 
-	r, _ := http.NewRequest("POST", "/upload", body)
+	r, _ := http.NewRequest(http.MethodPost, "/upload", body)
 	r.Header.Set("Content-Type", writer.FormDataContentType())
 	return r
 }
@@ -28,70 +31,62 @@ func TestMultipleDirectory(t *testing.T) {
 	expectedSring := "HELLO MOTO"
 	targetPath := "a/foo/bar/moto.txt"
 
-	r := httpUploadMultiPart(t, tempdir, expectedSring, targetPath)
+	e := echo.New()
+	req := httpUploadMultiPart(t, tempdir, expectedSring, targetPath)
+	rec := httptest.NewRecorder()
 
 	directory = tempdir
 
-	w := httptest.NewRecorder()
-	handler := http.HandlerFunc(uploadHandler)
-	handler.ServeHTTP(w, r)
+	context := e.NewContext(req, rec)
 
-	resp := w.Result()
-	if resp.StatusCode != http.StatusOK {
-		t.Fatal("Test didn't come back with OK")
+	if assert.Nil(t, upload(context)) {
+		assert.Equal(t, http.StatusCreated, rec.Code)
 	}
 
 	dat, err := ioutil.ReadFile(filepath.Join(tempdir, targetPath))
-	if err != nil {
-		t.Fatal(err)
-	}
-	if string(dat) != expectedSring {
-		t.Fatal("File didn't upload properly")
-	}
+	assert.Nil(t, err)
+	assert.Equal(t, string(dat), expectedSring)
 }
 
 func TestUploaderSimple(t *testing.T) {
 	tempdir, _ := ioutil.TempDir("", "test-uploader")
-	expectedSring := "HELLO MOTO"
+	expectedSring := "HELLO SIMPLE MOTO"
 	targetPath := "moto.txt"
 
-	r := httpUploadMultiPart(t, tempdir, expectedSring, targetPath)
+	e := echo.New()
+	req := httpUploadMultiPart(t, tempdir, expectedSring, targetPath)
+	rec := httptest.NewRecorder()
 
 	directory = tempdir
+	context := e.NewContext(req, rec)
 
-	w := httptest.NewRecorder()
-	handler := http.HandlerFunc(uploadHandler)
-	handler.ServeHTTP(w, r)
-
-	resp := w.Result()
-	if resp.StatusCode != http.StatusOK {
-		t.Fatal("Test didn't come back with OK")
+	if assert.Nil(t, upload(context)) {
+		assert.Equal(t, http.StatusCreated, rec.Code)
 	}
 
 	dat, err := ioutil.ReadFile(filepath.Join(tempdir, targetPath))
-	if err != nil {
-		t.Fatal(err)
-	}
-	if string(dat) != expectedSring {
-		t.Fatal("File didn't upload properly")
-	}
+	assert.Nil(t, err)
+	assert.Equal(t, string(dat), expectedSring)
 }
 
 func TestUploaderTraversal(t *testing.T) {
 	tempdir, _ := ioutil.TempDir("", "test-uploader")
 	expectedSring := "HELLO MOTO"
-	targetPath := "../../../../etc/passwd"
+	targetPath := "../../../../../../../../../../etc/passwd"
 
-	r := httpUploadMultiPart(t, tempdir, expectedSring, targetPath)
+	e := echo.New()
+	req := httpUploadMultiPart(t, tempdir, expectedSring, targetPath)
+	rec := httptest.NewRecorder()
 
 	directory = tempdir
 
-	w := httptest.NewRecorder()
-	handler := http.HandlerFunc(uploadHandler)
-	handler.ServeHTTP(w, r)
-
-	resp := w.Result()
-	if resp.StatusCode != http.StatusBadRequest {
-		t.Fatalf("Test didn't come back with OK: %d", resp.StatusCode)
+	context := e.NewContext(req, rec)
+	err := upload(context)
+	if assert.Error(t, err) {
+		he, ok := err.(*echo.HTTPError)
+		if ok {
+			assert.Equal(t, http.StatusForbidden, he.Code)
+		}
 	}
+
 }
