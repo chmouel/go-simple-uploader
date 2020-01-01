@@ -70,7 +70,7 @@ func upload(c echo.Context) error {
 
 	return c.HTML(
 		http.StatusCreated,
-		fmt.Sprintf("<h1>🚀 File has been uploaded to %s</h1>", savepath))
+		fmt.Sprintf("<h1>🚀 File has been uploaded to %s</h1>", path))
 }
 
 // Uploader main uploader function
