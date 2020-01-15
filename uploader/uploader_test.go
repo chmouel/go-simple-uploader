@@ -6,6 +6,7 @@ import (
 	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"path/filepath"
 	"testing"
 
@@ -13,7 +14,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func httpUploadMultiPart(t *testing.T, tempdir, s, p string) *http.Request {
+func httpUploadMultiPart(s, p string) *http.Request {
 	body := &bytes.Buffer{}
 	writer := multipart.NewWriter(body)
 	part, _ := writer.CreateFormFile("file", "hello.txt")
@@ -32,7 +33,7 @@ func TestMultipleDirectory(t *testing.T) {
 	targetPath := "a/foo/bar/moto.txt"
 
 	e := echo.New()
-	req := httpUploadMultiPart(t, tempdir, expectedSring, targetPath)
+	req := httpUploadMultiPart(expectedSring, targetPath)
 	rec := httptest.NewRecorder()
 
 	directory = tempdir
@@ -54,7 +55,7 @@ func TestUploaderSimple(t *testing.T) {
 	targetPath := "moto.txt"
 
 	e := echo.New()
-	req := httpUploadMultiPart(t, tempdir, expectedSring, targetPath)
+	req := httpUploadMultiPart(expectedSring, targetPath)
 	rec := httptest.NewRecorder()
 
 	directory = tempdir
@@ -75,7 +76,7 @@ func TestUploaderTraversal(t *testing.T) {
 	targetPath := "../../../../../../../../../../etc/passwd"
 
 	e := echo.New()
-	req := httpUploadMultiPart(t, tempdir, expectedSring, targetPath)
+	req := httpUploadMultiPart(expectedSring, targetPath)
 	rec := httptest.NewRecorder()
 
 	directory = tempdir
@@ -89,4 +90,32 @@ func TestUploaderTraversal(t *testing.T) {
 		}
 	}
 
+}
+
+func TestUploaderDelete(t *testing.T) {
+	tempdir, _ := ioutil.TempDir("", "test-uploader")
+	directory = tempdir
+	fpath := filepath.Join(tempdir, "foo.txt")
+
+	fp, err := os.Create(fpath)
+	assert.Nil(t, err)
+	fp.Close()
+
+	body := &bytes.Buffer{}
+	writer := multipart.NewWriter(body)
+	_ = writer.WriteField("path", "foo.txt")
+	_ = writer.Close()
+
+	e := echo.New()
+	req, _ := http.NewRequest(http.MethodDelete, "/upload", body)
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+	rec := httptest.NewRecorder()
+
+	context := e.NewContext(req, rec)
+	if assert.Nil(t, uploaderDelete(context)) {
+		assert.Equal(t, http.StatusAccepted, rec.Code)
+		if _, err = os.Stat(fpath); err != nil {
+			assert.True(t, os.IsNotExist(err))
+		}
+	}
 }
