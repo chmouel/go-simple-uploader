@@ -19,19 +19,14 @@ var (
 	directory = "./pub"
 )
 
-func errit(w http.ResponseWriter, message string, statusCode int) {
-	w.WriteHeader(http.StatusBadRequest)
-	_, _ = w.Write([]byte(message))
-}
-
-func delete(c echo.Context) error {
+func uploaderDelete(c echo.Context) error {
 	path := c.FormValue("path")
 
 	// Directory traversal detection
-	savepath := filepath.Join(directory, path)
-	abspath, _ := filepath.Abs(savepath)
-	absuploaddir, _ := filepath.Abs(directory)
-	if !strings.HasPrefix(abspath, absuploaddir) {
+	savePath := filepath.Join(directory, path)
+	abspath, _ := filepath.Abs(savePath)
+	absoluteUploadDir, _ := filepath.Abs(directory)
+	if !strings.HasPrefix(abspath, absoluteUploadDir) {
 		return echo.NewHTTPError(http.StatusForbidden, "DENIED: You should not upload outside the upload directory.")
 	}
 
@@ -45,7 +40,7 @@ func delete(c echo.Context) error {
 
 	err := os.Remove(abspath)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "Could not delete your file: %s", err)
+		return echo.NewHTTPError(http.StatusBadRequest, "Could not uploaderDelete your file: %s", err)
 	}
 
 	return c.HTML(
@@ -61,10 +56,6 @@ func upload(c echo.Context) error {
 	}
 
 	path := c.FormValue("path")
-	if err != nil {
-		return err
-	}
-
 	// Directory traversal detection
 	savepath := filepath.Join(directory, path)
 	abspath, _ := filepath.Abs(savepath)
@@ -122,7 +113,7 @@ func Uploader() error {
 
 	e.Static("/", "public")
 	e.POST("/upload", upload)
-	e.DELETE("/upload", delete)
+	e.DELETE("/upload", uploaderDelete)
 
 	return (e.Start(fmt.Sprintf("%s:%s", host, port)))
 }
