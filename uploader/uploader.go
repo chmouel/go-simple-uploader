@@ -45,7 +45,7 @@ func uploaderDelete(c echo.Context) error {
 
 	return c.HTML(
 		http.StatusAccepted,
-		fmt.Sprintf("💇 File %s has been deleted", path))
+		fmt.Sprintf("File %s has been deleted 💇", path))
 }
 
 func upload(c echo.Context) error {
@@ -89,7 +89,7 @@ func upload(c echo.Context) error {
 
 	return c.HTML(
 		http.StatusCreated,
-		fmt.Sprintf("<h1>🚀 File has been uploaded to %s</h1>", path))
+		fmt.Sprintf("File has been uploaded to %s 🚀", path))
 }
 
 // Uploader main uploader function
