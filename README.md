@@ -85,7 +85,7 @@ curl ${route}/hello-upload.txt
 
 ### API
 
-**Upload** :
+#### Upload** :
 
 * **method**: POST
 * **path**: */upload*
@@ -96,7 +96,7 @@ curl ${route}/hello-upload.txt
 * **example**:
 ```curl -u username:password -F path=hello-upload.txt -X POST -F file=@/tmp/hello.txt ${route}/upload```
 
-
+### Delete
 * **method**: DELETE
 * **path**: */upload*
 * **arguments**:
