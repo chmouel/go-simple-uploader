@@ -83,6 +83,30 @@ curl -u username:password -F path=hello-upload.txt -X POST -F file=@/tmp/hello.t
 curl ${route}/hello-upload.txt
 ```
 
+### API
+
+**Upload** :
+
+* **method**: POST
+* **path**: */upload*
+* **arguments**:
+* **path**: Path where to upload the files, which is relative to the upload directory, directory traversal is checked and disallowed.
+* **file**: File post data
+
+* **example**:
+```curl -u username:password -F path=hello-upload.txt -X POST -F file=@/tmp/hello.txt ${route}/upload```
+
+
+* **method**: DELETE
+* **path**: */upload*
+* **arguments**:
+* **path**: Path to delete
+
+* **example**:
+```curl -u username:password -F path=hello-upload.txt -X DELETE ${route}/upload```
+
+
+
 ## [LICENSE](LICENSE)
 
 [Apache 2.0](LICENSE)
