@@ -1,6 +1,4 @@
-![Build](https://img.shields.io/github/workflow/status/chmouel/go-simple-uploader/Build%20and%20Test)
 [![GolangCI](https://golangci.com/badges/github.com/chmouel/go-simple-uploader.svg)](https://golangci.com/r/github.com/chmouel/go-simple-uploader)
-[![Codecov](https://img.shields.io/codecov/c/github/chmouel/go-simple-uploader/master.svg?style=flat-square)](https://codecov.io/gh/chmouel/go-simple-uploader) 
 [![License](https://img.shields.io/github/license/chmouel/go-simple-uploader)](/LICENSE)
 
 
