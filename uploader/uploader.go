@@ -34,11 +34,7 @@ func uploaderDelete(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusNotFound, "Could not find your file")
 	}
 
-	if stat, err := os.Stat(abspath); err == nil && stat.IsDir() {
-		return echo.NewHTTPError(http.StatusBadRequest, "Deleting a directory is not supported yet")
-	}
-
-	err := os.Remove(abspath)
+	err := os.RemoveAll(abspath)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "Could not uploaderDelete your file: %s", err)
 	}
