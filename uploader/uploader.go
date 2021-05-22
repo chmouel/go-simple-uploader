@@ -8,8 +8,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/labstack/echo"
-	"github.com/labstack/echo/middleware"
+	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
 )
 
 var (
@@ -88,6 +88,24 @@ func upload(c echo.Context) error {
 		fmt.Sprintf("File has been uploaded to %s 🚀", path))
 }
 
+func lastModified(c echo.Context) error {
+	path := c.Param("path")
+	filePath := filepath.Join(directory, path)
+	abspath, _ := filepath.Abs(filePath)
+	absoluteUploadDir, _ := filepath.Abs(directory)
+	if !strings.HasPrefix(abspath, absoluteUploadDir) {
+		return echo.NewHTTPError(http.StatusForbidden, "DENIED: You should not try to get outside the root directory.")
+	}
+
+	info, err := os.Stat(abspath)
+	if err != nil {
+		return echo.NotFoundHandler(c)
+	}
+
+	c.Response().Header().Set(echo.HeaderLastModified, info.ModTime().UTC().Format(http.TimeFormat))
+	return c.NoContent(http.StatusOK)
+}
+
 // Uploader main uploader function
 func Uploader() error {
 	if os.Getenv("UPLOADER_DIRECTORY") != "" {
@@ -107,6 +125,7 @@ func Uploader() error {
 	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
 
+	e.HEAD("/:path", lastModified)
 	e.Static("/", directory)
 	e.POST("/upload", upload)
 	e.DELETE("/upload", uploaderDelete)
