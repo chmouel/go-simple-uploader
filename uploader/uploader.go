@@ -107,7 +107,7 @@ func Uploader() error {
 	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
 
-	e.Static("/", "public")
+	e.Static("/", directory)
 	e.POST("/upload", upload)
 	e.DELETE("/upload", uploaderDelete)
 
