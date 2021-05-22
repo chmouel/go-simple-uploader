@@ -1,4 +1,4 @@
-FROM golang:latest
+FROM mirror.gcr.io/library/golang:latest
 COPY . /go/src/github.com/chmouel/go-simple-uploader
 WORKDIR /go/src/github.com/chmouel/go-simple-uploader
 RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o go-simple-uploader .
