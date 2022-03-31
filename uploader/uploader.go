@@ -36,7 +36,7 @@ func uploaderDelete(c echo.Context) error {
 
 	err := os.RemoveAll(abspath)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "Could not uploaderDelete your file: %s", err)
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Could not delete your your file: %s", err.Error()))
 	}
 
 	return c.HTML(
