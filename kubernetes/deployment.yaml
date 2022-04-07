@@ -55,7 +55,7 @@ spec:
               valueFrom:
                 secretKeyRef:
                   name: "uploader-upload-credentials"
-                  key: "credential"
+                  key: "credentials"
           imagePullPolicy: Always
           name: simple-uploader
           ports:
