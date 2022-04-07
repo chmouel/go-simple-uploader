@@ -145,6 +145,10 @@ func Uploader() error {
 	if os.Getenv("UPLOADER_UPLOAD_CREDENTIALS") != "" {
 		creds := strings.Split(os.Getenv("UPLOADER_UPLOAD_CREDENTIALS"), ":")
 		e.Use(middleware.BasicAuth(func(username, password string, c echo.Context) (bool, error) {
+			if c.Request().URL.String() != "/upload" {
+				return true, nil
+			}
+
 			if subtle.ConstantTimeCompare([]byte(username), []byte(creds[0])) == 1 &&
 				subtle.ConstantTimeCompare([]byte(password), []byte(strings.Join(creds[1:], ":"))) == 1 {
 				return true, nil
