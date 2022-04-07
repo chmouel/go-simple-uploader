@@ -1,7 +1,6 @@
 [![GolangCI](https://golangci.com/badges/github.com/chmouel/go-simple-uploader.svg)](https://golangci.com/r/github.com/chmouel/go-simple-uploader)
 [![License](https://img.shields.io/github/license/chmouel/go-simple-uploader)](/LICENSE)
 
-
 # GO Simple Uploader
 
 A simple uploader in GO, meant to be deployed in a container behind a
@@ -35,6 +34,7 @@ It accepts two form field  :
 
 - **file**: The file stream of the upload
 - **path**: The path
+- **targz**: Assume the file uploaded is a tarball which we want to uncompress on filesystem
 
 ## OpenShift Deployment
 
@@ -83,27 +83,38 @@ curl ${route}/hello-upload.txt
 
 ### API
 
-#### Upload** :
+#### Upload**
 
-* **method**: POST
-* **path**: */upload*
-* **arguments**:
-* **path**: Path where to upload the files, which is relative to the upload directory, directory traversal is checked and disallowed.
-* **file**: File post data
+- **method**: POST
+- **path**: */upload*
+- **arguments**:
+- **path**: Path where to upload the files, which is relative to the upload directory, directory traversal is checked and disallowed.
+- **file**: File post data
+- **untargz**: Booleean if we want to uncompress the file on fs
 
-* **example**:
-```curl -u username:password -F path=hello-upload.txt -X POST -F file=@/tmp/hello.txt ${route}/upload```
+- **examples**:
+
+```shell
+curl -u username:password -F path=hello-upload.txt -X POST -F file=@/tmp/hello.txt ${route}/upload
+```
+
+```shell
+tar czf - /path/to/directory|curl -u username:password -F path=hello-upload.txt -F targz=true -X POST -F file=@- ${route}/upload
+```
 
 ### Delete
-* **method**: DELETE
-* **path**: */upload*
-* **arguments**:
-* **path**: Path to delete
 
-* **example**:
-```curl -u username:password -F path=hello-upload.txt -X DELETE ${route}/upload```
+- **method**: DELETE
 
+- **path**: */upload*
+- **arguments**:
+- **path**: Path to delete
 
+- **example**:
+
+```shell
+curl -u username:password -F path=hello-upload.txt -X DELETE ${route}/upload
+```
 
 ## [LICENSE](LICENSE)
 

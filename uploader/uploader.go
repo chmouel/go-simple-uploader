@@ -51,6 +51,7 @@ func upload(c echo.Context) error {
 		return err
 	}
 
+	untargz := c.FormValue("targz")
 	path := c.FormValue("path")
 	// Directory traversal detection
 	savepath := filepath.Join(directory, path)
@@ -60,17 +61,35 @@ func upload(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusForbidden, "DENIED: You should not upload outside the upload directory.")
 	}
 
-	if _, err := os.Stat(savepath); os.IsNotExist(err) {
-		if err := os.MkdirAll(filepath.Dir(savepath), 0755); err != nil {
-			return err
-		}
-	}
-
 	src, err := file.Open()
 	if err != nil {
 		return err
 	}
 	defer src.Close()
+
+	if untargz != "" {
+		if err := os.MkdirAll(savepath, 0o755); err != nil {
+			return err
+		}
+		src, err := file.Open()
+		if err != nil {
+			return err
+		}
+		defer src.Close()
+
+		err = UntarGz(abspath, src)
+		if err != nil {
+			fmt.Println(err.Error())
+			return err
+		}
+		return c.HTML(http.StatusCreated, fmt.Sprintf("File has been uploaded to %s 🚀\n", path))
+	}
+
+	if _, err := os.Stat(savepath); os.IsNotExist(err) {
+		if err := os.MkdirAll(filepath.Dir(savepath), 0o755); err != nil {
+			return err
+		}
+	}
 
 	dst, err := os.Create(savepath)
 	if err != nil {
@@ -85,7 +104,7 @@ func upload(c echo.Context) error {
 
 	return c.HTML(
 		http.StatusCreated,
-		fmt.Sprintf("File has been uploaded to %s 🚀", path))
+		fmt.Sprintf("File has been uploaded to %s 🚀\n", path))
 }
 
 func lastModified(c echo.Context) error {
