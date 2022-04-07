@@ -145,6 +145,7 @@ func Uploader() error {
 	if os.Getenv("UPLOADER_UPLOAD_CREDENTIALS") != "" {
 		creds := strings.Split(os.Getenv("UPLOADER_UPLOAD_CREDENTIALS"), ":")
 		e.Use(middleware.BasicAuth(func(username, password string, c echo.Context) (bool, error) {
+			fmt.Println(c.Request().URL.String())
 			if c.Request().URL.String() != "/upload" {
 				return true, nil
 			}
