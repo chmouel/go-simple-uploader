@@ -40,7 +40,7 @@ spec:
           persistentVolumeClaim:
             claimName: cache
       containers:
-        - image: quay.io/chmouel/go-simple-uploader
+        - image: ghcr.io/chmouel/go-simple-uploader:master
           volumeMounts:
             - mountPath: "/uploads"
               name: cache
