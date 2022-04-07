@@ -13,6 +13,10 @@ lint: ## Lint Golang files
 vet: ## Run go vet
 	@go vet ${PKG_LIST}
 
+dev: ## Run reflex to dev easily with easy!
+	@cd uploader && \
+		reflex -v -s -g '*.go' -- sh -c 'go run ../main.go'
+
 test: ## Run unittests
 	@go test -short ${PKG_LIST}
 

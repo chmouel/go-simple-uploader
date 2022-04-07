@@ -1,6 +1,7 @@
 package uploader
 
 import (
+	"crypto/subtle"
 	"fmt"
 	"io"
 	"net/http"
@@ -13,7 +14,7 @@ import (
 )
 
 var (
-	/// HOST where to bind the upload
+	/// HOST where to bind the upload !
 	host      = "localhost"
 	port      = "8080"
 	directory = "./pub"
@@ -141,6 +142,16 @@ func Uploader() error {
 
 	e := echo.New()
 
+	if os.Getenv("UPLOADER_UPLOAD_CREDENTIALS") != "" {
+		creds := strings.Split(os.Getenv("UPLOADER_UPLOAD_CREDENTIALS"), ":")
+		e.Use(middleware.BasicAuth(func(username, password string, c echo.Context) (bool, error) {
+			if subtle.ConstantTimeCompare([]byte(username), []byte(creds[0])) == 1 &&
+				subtle.ConstantTimeCompare([]byte(password), []byte(strings.Join(creds[1:], ":"))) == 1 {
+				return true, nil
+			}
+			return false, nil
+		}))
+	}
 	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
 

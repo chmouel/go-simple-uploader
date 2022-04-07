@@ -7,7 +7,7 @@ A simple uploader in GO, meant to be deployed in a container behind a
 nginx protected environment, but you can deploy it as you wish.
 
 I mainly deploy it to OpenShift which handles for me the building of the source
-the deployment with a nginx server and observability etc.. See the OpenShift
+the deployment with a nginx server and observability etc See the OpenShift
 deployment section of this document.
 
 ## Install
@@ -23,14 +23,15 @@ done by environment variable with :
 - **UPLOADER_HOST** -- hostname to bind to
 - **UPLOADER_PORT** -- port to bind to
 - **UPLOADER_DIRECTORY** -- Directory where to upload
+- **UPLOADER_UPLOAD_CREDENTIALS** -- If you like to protect your upload directory by a username password then specify them separated by colon, i.e: `username:password`
 
-Usually you will run this behind a HTTP server which will handle the upload
+Usually you will run this behind an HTTP server which will handle the upload
 protection, acl or others. You really don't want to expose this to the internet
 unprotected.
 
 ## Usage
 
-It accepts two form field  :
+It accepts form http fields:
 
 - **file**: The file stream of the upload
 - **path**: The path
@@ -50,21 +51,19 @@ Under nginx configuration the `/private` directory is protected with the same
 username password as configured in the htpasswd, which you can use to 'protect
 stuff.
 
-## Install
+## Setup
 
-You need first to create a a username password with :
+You need first to create a username password with :
 
-```
+```shell
 htpasswd -b -c openshift/config/osinstall.htpasswd username password
 ```
 
 Then you just use the makefile target to build and deploy :
 
-```
+```shell
 oc new-project uploader && make deploy
 ```
-
-## Usage
 
 Get the route of your deployment with :
 
