@@ -142,21 +142,6 @@ func Uploader() error {
 
 	e := echo.New()
 
-	if os.Getenv("UPLOADER_UPLOAD_CREDENTIALS") != "" {
-		creds := strings.Split(os.Getenv("UPLOADER_UPLOAD_CREDENTIALS"), ":")
-		e.Use(middleware.BasicAuth(func(username, password string, c echo.Context) (bool, error) {
-			fmt.Println(c.Request().URL.String())
-			if c.Request().URL.String() != "/upload" {
-				return true, nil
-			}
-
-			if subtle.ConstantTimeCompare([]byte(username), []byte(creds[0])) == 1 &&
-				subtle.ConstantTimeCompare([]byte(password), []byte(strings.Join(creds[1:], ":"))) == 1 {
-				return true, nil
-			}
-			return false, nil
-		}))
-	}
 	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
 
@@ -164,6 +149,25 @@ func Uploader() error {
 	e.Static("/", directory)
 	e.POST("/upload", upload)
 	e.DELETE("/upload", uploaderDelete)
+
+	if os.Getenv("UPLOADER_UPLOAD_CREDENTIALS") != "" {
+		creds := strings.Split(os.Getenv("UPLOADER_UPLOAD_CREDENTIALS"), ":")
+		c := middleware.DefaultBasicAuthConfig
+		c.Validator = (func(username, password string, c echo.Context) (bool, error) {
+			if subtle.ConstantTimeCompare([]byte(username), []byte(creds[0])) == 1 &&
+				subtle.ConstantTimeCompare([]byte(password), []byte(strings.Join(creds[1:], ":"))) == 1 {
+				return true, nil
+			}
+			return false, nil
+		})
+		c.Skipper = func(c echo.Context) bool {
+			if c.Request().URL.String() != "/upload" {
+				return true
+			}
+			return false
+		}
+		e.Use(middleware.BasicAuthWithConfig(c))
+	}
 
 	return (e.Start(fmt.Sprintf("%s:%s", host, port)))
 }
