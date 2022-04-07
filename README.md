@@ -90,7 +90,7 @@ curl ${route}/hello-upload.txt
 - **arguments**:
 - **path**: Path where to upload the files, which is relative to the upload directory, directory traversal is checked and disallowed.
 - **file**: File post data
-- **untargz**: Booleean if we want to uncompress the file on fs
+- **targz**: Booleean if we want to uncompress the file on fs
 
 - **examples**:
 
