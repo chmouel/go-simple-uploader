@@ -8,7 +8,7 @@ GO_FILES := $(shell find . -name '*.go' | grep -v /vendor/ | grep -v _test.go)
 all: build
 
 lint: ## Lint Golang files
-	@golint -set_exit_status ${PKG_LIST}
+	@golangci-lint run uploader/
 
 vet: ## Run go vet
 	@go vet ${PKG_LIST}
