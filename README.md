@@ -114,6 +114,19 @@ tar czf - /path/to/directory|curl -u username:password -F path=hello-upload.txt 
 ```shell
 curl -u username:password -F path=hello-upload.txt -X DELETE ${route}/upload
 ```
+---
+- **method**: DELETE
+
+- **path**: */delete*
+- **arguments**:
+- **path**: path to directory to delete files in it
+- **days**: delete files in above directory older than X `days` 
+
+- **example**:
+
+```shell
+curl -k -s -u username:password -F path=/path/to/directory  -F 'days=1' -X DELETE ${route}/delete
+```
 
 ## [LICENSE](LICENSE)
 
