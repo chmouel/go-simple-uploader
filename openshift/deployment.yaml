@@ -1,0 +1,71 @@
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: cache
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 7Gi
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: uploader
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: uploader
+  template:
+    metadata:
+      labels:
+        app: uploader
+    spec:
+      volumes:
+        - name: cache
+          persistentVolumeClaim:
+            claimName: cache
+        - configMap:
+            defaultMode: 420
+            name: my-nginx-conf
+          name: my-nginx-conf    
+      containers:
+        - image: ghcr.io/chmouel/go-simple-uploader:master
+          volumeMounts:
+            - mountPath: "/uploads"
+              name: cache
+          env:
+            - name: UPLOADER_HOST
+              value: "0.0.0.0"
+            - name: UPLOADER_PORT
+              value: "9000"
+            - name: UPLOADER_DIRECTORY
+              value: "/uploads"
+          imagePullPolicy: Always
+          name: simple-uploader
+          ports:
+            - containerPort: 8080
+        - image: nginxinc/nginx-unprivileged:latest
+          name: nginx
+          volumeMounts:
+          - mountPath: /etc/nginx/conf.d/
+            name: my-nginx-conf
+          - mountPath: /uploads
+            name: cache
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: uploader
+spec:
+  selector:
+    app: uploader
+  ports:
+    - protocol: TCP
+      port: 8080
+      targetPort: 8080
+      name: http-listener

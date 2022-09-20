@@ -18,11 +18,10 @@ reconfig: config
 	@oc delete pod `oc get pod -o name -l app=$(APP_NAME)|sed 's,pod/,,'` || true
 
 deploy: reconfig
-	@oc delete -f openshift.yaml 2>/dev/null || true
-	@oc create -f openshift.yaml
+	@oc delete -f deployment.yaml 2>/dev/null || true
+	@oc create -f deployment.yaml
 	@oc expose service/$(APP_NAME) 2>/dev/null || true
 	@echo "App is getting deployed to: "
 	@echo http://`oc get route ${APP_NAME} -o jsonpath='{.spec.host}'`
-	@echo "Run: oc logs -f bc/$(APP_NAME) to follow build"
 
 .PHONY: deploy reconfig config all
