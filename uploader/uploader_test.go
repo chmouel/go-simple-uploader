@@ -2,6 +2,7 @@ package uploader
 
 import (
 	"bytes"
+	"fmt"
 	"io/ioutil"
 	"mime/multipart"
 	"net/http"
@@ -9,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/assert"
@@ -113,6 +115,76 @@ func TestUploaderDelete(t *testing.T) {
 
 	context := e.NewContext(req, rec)
 	if assert.Nil(t, uploaderDelete(context)) {
+		assert.Equal(t, http.StatusAccepted, rec.Code)
+		if _, err = os.Stat(fpath); err != nil {
+			assert.True(t, os.IsNotExist(err))
+		}
+	}
+}
+
+func TestDeleteFilesOlderThanOneDay(t *testing.T) {
+	tempdir, _ := ioutil.TempDir("", "test-uploader")
+	directory = tempdir
+	fpath := filepath.Join(tempdir, "foo.txt")
+
+	fp, err := os.Create(fpath)
+	assert.Nil(t, err)
+	fp.Close()
+
+	timestamp := time.Now().Add(-(time.Duration(1) * 25 * time.Hour))
+	err = os.Chtimes(fpath, timestamp, timestamp)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	body := &bytes.Buffer{}
+	writer := multipart.NewWriter(body)
+	_ = writer.WriteField("path", "")
+	_ = writer.WriteField("days", "1")
+	_ = writer.Close()
+
+	e := echo.New()
+	req, _ := http.NewRequest(http.MethodDelete, "/delete", body)
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+	rec := httptest.NewRecorder()
+
+	context := e.NewContext(req, rec)
+	if assert.Nil(t, deleteOldFilesOfDir(context)) {
+		assert.Equal(t, http.StatusAccepted, rec.Code)
+		if _, err = os.Stat(fpath); err != nil {
+			assert.True(t, os.IsNotExist(err))
+		}
+	}
+}
+
+func TestDeleteFilesOlderThanTwoDay(t *testing.T) {
+	tempdir, _ := ioutil.TempDir("", "test-uploader")
+	directory = tempdir
+	fpath := filepath.Join(tempdir, "foo.txt")
+
+	fp, err := os.Create(fpath)
+	assert.Nil(t, err)
+	fp.Close()
+
+	timestamp := time.Now().Add(-(time.Duration(2) * 25 * time.Hour))
+	err = os.Chtimes(fpath, timestamp, timestamp)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	body := &bytes.Buffer{}
+	writer := multipart.NewWriter(body)
+	_ = writer.WriteField("path", "")
+	_ = writer.WriteField("days", "1")
+	_ = writer.Close()
+
+	e := echo.New()
+	req, _ := http.NewRequest(http.MethodDelete, "/delete", body)
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+	rec := httptest.NewRecorder()
+
+	context := e.NewContext(req, rec)
+	if assert.Nil(t, deleteOldFilesOfDir(context)) {
 		assert.Equal(t, http.StatusAccepted, rec.Code)
 		if _, err = os.Stat(fpath); err != nil {
 			assert.True(t, os.IsNotExist(err))
