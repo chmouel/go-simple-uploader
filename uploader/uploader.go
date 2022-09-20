@@ -4,10 +4,13 @@ import (
 	"crypto/subtle"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
+	"time"
 
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
@@ -126,6 +129,68 @@ func lastModified(c echo.Context) error {
 	return c.NoContent(http.StatusOK)
 }
 
+func deleteOldFilesOfDir(c echo.Context) error {
+	path := c.FormValue("path")
+	days, _ := strconv.Atoi(c.FormValue("days"))
+
+	filePath := filepath.Join(directory, path)
+	abspath, _ := filepath.Abs(filePath)
+	absoluteUploadDir, _ := filepath.Abs(directory)
+	if !strings.HasPrefix(abspath, absoluteUploadDir) {
+		return echo.NewHTTPError(http.StatusForbidden, "DENIED: You should not try to get outside the root directory.")
+	}
+
+	_, err := os.Stat(abspath)
+	if err != nil {
+		return echo.NotFoundHandler(c)
+	}
+
+	files, err := findFilesOlderThanXDays(abspath, days)
+	if err != nil {
+		return echo.NotFoundHandler(c)
+	}
+
+	if len(files) == 0 {
+		return c.HTML(
+			http.StatusAccepted,
+			fmt.Sprintf("There are NO Old Files more than %d days to be deleted 💇", days))
+	}
+
+	for _, file := range files {
+		NewfilePath := filepath.Join(abspath, file.Name())
+		Newabspath, _ := filepath.Abs(NewfilePath)
+
+		err := os.Remove(Newabspath)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Could not delete your your file: %s", err.Error()))
+		}
+	}
+
+	return c.HTML(
+		http.StatusAccepted,
+		fmt.Sprintf("Old Files more than %d days has been deleted 💇", days))
+}
+
+func isOlderThanXDays(t time.Time, days int) bool {
+	return time.Since(t) > (time.Duration(days) * 24 * time.Hour)
+}
+
+func findFilesOlderThanXDays(dir string, days int) (files []os.FileInfo, err error) {
+	tmpfiles, err := ioutil.ReadDir(dir)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, file := range tmpfiles {
+		if file.Mode().IsRegular() {
+			if isOlderThanXDays(file.ModTime(), days) {
+				files = append(files, file)
+			}
+		}
+	}
+	return files, nil
+}
+
 // Uploader main uploader function
 func Uploader() error {
 	if os.Getenv("UPLOADER_DIRECTORY") != "" {
@@ -149,6 +214,7 @@ func Uploader() error {
 	e.Static("/", directory)
 	e.POST("/upload", upload)
 	e.DELETE("/upload", uploaderDelete)
+	e.DELETE("/delete", deleteOldFilesOfDir)
 
 	if os.Getenv("UPLOADER_UPLOAD_CREDENTIALS") != "" {
 		creds := strings.Split(os.Getenv("UPLOADER_UPLOAD_CREDENTIALS"), ":")
@@ -160,12 +226,6 @@ func Uploader() error {
 			}
 			return false, nil
 		})
-		c.Skipper = func(c echo.Context) bool {
-			if c.Request().URL.String() != "/upload" {
-				return true
-			}
-			return false
-		}
 		e.Use(middleware.BasicAuthWithConfig(c))
 	}
 
