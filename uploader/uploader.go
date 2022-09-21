@@ -132,6 +132,16 @@ func lastModified(c echo.Context) error {
 func deleteOldFilesOfDir(c echo.Context) error {
 	path := c.FormValue("path")
 	days, _ := strconv.Atoi(c.FormValue("days"))
+	recursive_flag := c.FormValue("recursive")
+
+	if len(recursive_flag) == 0 {
+		recursive_flag = "false"
+	}
+
+	recursive, err := strconv.ParseBool(recursive_flag)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "DENIED: check if your formvalue recursive should be any of this ('true', 'True', 'false','False','TRUE','FALSE','f','t','F','T', '') ")
+	}
 
 	filePath := filepath.Join(directory, path)
 	abspath, _ := filepath.Abs(filePath)
@@ -140,12 +150,12 @@ func deleteOldFilesOfDir(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusForbidden, "DENIED: You should not try to get outside the root directory.")
 	}
 
-	_, err := os.Stat(abspath)
+	_, err = os.Stat(abspath)
 	if err != nil {
 		return echo.NotFoundHandler(c)
 	}
 
-	files, err := findFilesOlderThanXDays(abspath, days)
+	files, err := findFilesOlderThanXDays(abspath, days, recursive)
 	if err != nil {
 		return echo.NotFoundHandler(c)
 	}
@@ -160,12 +170,22 @@ func deleteOldFilesOfDir(c echo.Context) error {
 		NewfilePath := filepath.Join(abspath, file.Name())
 		Newabspath, _ := filepath.Abs(NewfilePath)
 
-		err := os.RemoveAll(Newabspath)
+		if recursive && file.IsDir() {
+			err = os.RemoveAll(Newabspath)
+		} else {
+			err = os.Remove(Newabspath)
+		}
+
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Could not delete your your file: %s", err.Error()))
 		}
 	}
 
+	if recursive {
+		return c.HTML(
+			http.StatusAccepted,
+			fmt.Sprintf("Old Files/child directories more than %d days has been deleted 💇", days))
+	}
 	return c.HTML(
 		http.StatusAccepted,
 		fmt.Sprintf("Old Files more than %d days has been deleted 💇", days))
@@ -175,14 +195,14 @@ func isOlderThanXDays(t time.Time, days int) bool {
 	return time.Since(t) > (time.Duration(days) * 24 * time.Hour)
 }
 
-func findFilesOlderThanXDays(dir string, days int) (files []os.FileInfo, err error) {
+func findFilesOlderThanXDays(dir string, days int, recursive bool) (files []os.FileInfo, err error) {
 	tmpfiles, err := ioutil.ReadDir(dir)
 	if err != nil {
 		return nil, err
 	}
 
 	for _, file := range tmpfiles {
-		if file.Mode().IsRegular() || file.IsDir() {
+		if file.Mode().IsRegular() || (recursive && file.IsDir()) {
 			if isOlderThanXDays(file.ModTime(), days) {
 				files = append(files, file)
 			}
