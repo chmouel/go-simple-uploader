@@ -175,7 +175,7 @@ func TestDeleteFilesOlderThanTwoDay(t *testing.T) {
 	body := &bytes.Buffer{}
 	writer := multipart.NewWriter(body)
 	_ = writer.WriteField("path", "")
-	_ = writer.WriteField("days", "1")
+	_ = writer.WriteField("days", "2")
 	_ = writer.Close()
 
 	e := echo.New()

@@ -160,7 +160,7 @@ func deleteOldFilesOfDir(c echo.Context) error {
 		NewfilePath := filepath.Join(abspath, file.Name())
 		Newabspath, _ := filepath.Abs(NewfilePath)
 
-		err := os.Remove(Newabspath)
+		err := os.RemoveAll(Newabspath)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Could not delete your your file: %s", err.Error()))
 		}
@@ -182,7 +182,7 @@ func findFilesOlderThanXDays(dir string, days int) (files []os.FileInfo, err err
 	}
 
 	for _, file := range tmpfiles {
-		if file.Mode().IsRegular() {
+		if file.Mode().IsRegular() || file.IsDir() {
 			if isOlderThanXDays(file.ModTime(), days) {
 				files = append(files, file)
 			}
