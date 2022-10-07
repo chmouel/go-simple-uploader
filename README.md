@@ -53,6 +53,14 @@ stuff.
 
 ## Setup
 
+## Run directly
+
+You can run the service directly with the kubernetes [template](kubernetes/deployment.yaml). 
+
+By default the uplod password and username is username:password, to protect the `/upload` and `/delete` (as you should) properly you will need to change the secret from https://github.com/chmouel/go-simple-uploader/blob/master/kubernetes/deployment.yaml#L5
+
+## Run behind nginx
+
 You need first to create a username password with :
 
 ```shell
