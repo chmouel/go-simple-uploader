@@ -230,8 +230,8 @@ func Uploader() error {
 	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
 
-	e.HEAD("/:path", lastModified)
 	e.Static("/", directory)
+	e.HEAD("/:path", lastModified)
 	e.POST("/upload", upload)
 	e.DELETE("/upload", uploaderDelete)
 	e.DELETE("/delete", deleteOldFilesOfDir)
@@ -239,6 +239,12 @@ func Uploader() error {
 	if os.Getenv("UPLOADER_UPLOAD_CREDENTIALS") != "" {
 		creds := strings.Split(os.Getenv("UPLOADER_UPLOAD_CREDENTIALS"), ":")
 		c := middleware.DefaultBasicAuthConfig
+		c.Skipper = func(c echo.Context) bool {
+			if (c.Request().Method == "HEAD" || c.Request().Method == "GET") && c.Path() != "/upload" && c.Path() != "/delete" {
+				return true
+			}
+			return false
+		}
 		c.Validator = (func(username, password string, c echo.Context) (bool, error) {
 			if subtle.ConstantTimeCompare([]byte(username), []byte(creds[0])) == 1 &&
 				subtle.ConstantTimeCompare([]byte(password), []byte(strings.Join(creds[1:], ":"))) == 1 {
