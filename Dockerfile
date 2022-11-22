@@ -2,6 +2,7 @@ FROM registry.access.redhat.com/ubi9/go-toolset:latest
 
 COPY . /src
 WORKDIR /src
+ARG TARGETARCH
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=${TARGETARCH} go build -a  -ldflags="-s -w"  -installsuffix cgo -o /tmp/go-simple-uploader .
 
 FROM registry.access.redhat.com/ubi9/ubi-minimal:latest
