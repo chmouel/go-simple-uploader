@@ -3,7 +3,7 @@ FROM registry.access.redhat.com/ubi9/go-toolset:latest
 COPY . /src
 WORKDIR /src
 ARG TARGETARCH
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=${TARGETARCH} go build -a  -ldflags="-s -w"  -installsuffix cgo -o /tmp/go-simple-uploader .
+RUN GOFLAGS="-buildvcs=false" CGO_ENABLED=0 GOOS=linux GOARCH=${TARGETARCH} go build -a  -ldflags="-s -w"  -installsuffix cgo -o /tmp/go-simple-uploader .
 
 FROM registry.access.redhat.com/ubi9/ubi-minimal:latest
 RUN microdnf -y update && microdnf -y --nodocs install tar rsync shadow-utils && microdnf clean all && rm -rf /var/cache/yum
