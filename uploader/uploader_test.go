@@ -91,7 +91,6 @@ func TestUploaderTraversal(t *testing.T) {
 			assert.Equal(t, http.StatusForbidden, he.Code)
 		}
 	}
-
 }
 
 func TestUploaderDelete(t *testing.T) {
