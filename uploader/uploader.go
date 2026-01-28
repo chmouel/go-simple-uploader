@@ -28,9 +28,17 @@ func uploaderDelete(c echo.Context) error {
 
 	// Directory traversal detection
 	savePath := filepath.Join(directory, path)
-	abspath, _ := filepath.Abs(savePath)
-	absoluteUploadDir, _ := filepath.Abs(directory)
-	if !strings.HasPrefix(abspath, absoluteUploadDir) {
+	abspath, err := filepath.Abs(savePath)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "Invalid path")
+	}
+	absoluteUploadDir, err := filepath.Abs(directory)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "Could not determine upload directory")
+	}
+
+	// Ensure we don't match prefixes like /data vs /database
+	if !strings.HasPrefix(abspath, absoluteUploadDir+string(os.PathSeparator)) && abspath != absoluteUploadDir {
 		return echo.NewHTTPError(http.StatusForbidden, "DENIED: You should not upload outside the upload directory.")
 	}
 
@@ -38,7 +46,7 @@ func uploaderDelete(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusNotFound, "Could not find your file")
 	}
 
-	err := os.RemoveAll(abspath)
+	err = os.RemoveAll(abspath)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Could not delete your your file: %s", err.Error()))
 	}
@@ -59,9 +67,17 @@ func upload(c echo.Context) error {
 	path := c.FormValue("path")
 	// Directory traversal detection
 	savepath := filepath.Join(directory, path)
-	abspath, _ := filepath.Abs(savepath)
-	absuploaddir, _ := filepath.Abs(directory)
-	if !strings.HasPrefix(abspath, absuploaddir) {
+	abspath, err := filepath.Abs(savepath)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "Invalid path")
+	}
+	absuploaddir, err := filepath.Abs(directory)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "Could not determine upload directory")
+	}
+
+	// Ensure we don't match prefixes like /data vs /database
+	if !strings.HasPrefix(abspath, absuploaddir+string(os.PathSeparator)) && abspath != absuploaddir {
 		return echo.NewHTTPError(http.StatusForbidden, "DENIED: You should not upload outside the upload directory.")
 	}
 
@@ -114,9 +130,17 @@ func upload(c echo.Context) error {
 func lastModified(c echo.Context) error {
 	path := c.Param("path")
 	filePath := filepath.Join(directory, path)
-	abspath, _ := filepath.Abs(filePath)
-	absoluteUploadDir, _ := filepath.Abs(directory)
-	if !strings.HasPrefix(abspath, absoluteUploadDir) {
+	abspath, err := filepath.Abs(filePath)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "Invalid path")
+	}
+	absoluteUploadDir, err := filepath.Abs(directory)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "Could not determine upload directory")
+	}
+
+	// Ensure we don't match prefixes like /data vs /database
+	if !strings.HasPrefix(abspath, absoluteUploadDir+string(os.PathSeparator)) && abspath != absoluteUploadDir {
 		return echo.NewHTTPError(http.StatusForbidden, "DENIED: You should not try to get outside the root directory.")
 	}
 
@@ -144,9 +168,17 @@ func deleteOldFilesOfDir(c echo.Context) error {
 	}
 
 	filePath := filepath.Join(directory, path)
-	abspath, _ := filepath.Abs(filePath)
-	absoluteUploadDir, _ := filepath.Abs(directory)
-	if !strings.HasPrefix(abspath, absoluteUploadDir) {
+	abspath, err := filepath.Abs(filePath)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "Invalid path")
+	}
+	absoluteUploadDir, err := filepath.Abs(directory)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "Could not determine upload directory")
+	}
+
+	// Ensure we don't match prefixes like /data vs /database
+	if !strings.HasPrefix(abspath, absoluteUploadDir+string(os.PathSeparator)) && abspath != absoluteUploadDir {
 		return echo.NewHTTPError(http.StatusForbidden, "DENIED: You should not try to get outside the root directory.")
 	}
 

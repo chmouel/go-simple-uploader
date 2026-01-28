@@ -3,9 +3,11 @@ package uploader
 import (
 	"archive/tar"
 	"compress/gzip"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 // Untar takes a destination path and a reader; a tar reader loops over the tarfile
@@ -41,9 +43,10 @@ func UntarGz(dst string, r io.Reader) error {
 		// the target location where the dir/file should be created
 		target := filepath.Join(dst, header.Name)
 
-		// the following switch could also be done using fi.Mode(), not sure if there
-		// a benefit of using one vs. the other.
-		// fi := header.FileInfo()
+		// Sanitize the path to prevent Zip Slip (Tar Slip)
+		if !strings.HasPrefix(target, filepath.Clean(dst)+string(os.PathSeparator)) {
+			return fmt.Errorf("illegal file path: %s", target)
+		}
 
 		// check the file type
 		switch header.Typeflag {
@@ -58,13 +61,20 @@ func UntarGz(dst string, r io.Reader) error {
 
 		// if it's a file create it
 		case tar.TypeReg:
-			f, err := os.OpenFile(target, os.O_CREATE|os.O_RDWR, os.FileMode(header.Mode))
+			// Ensure we don't use unsafe file modes from the tarball
+			mode := header.FileInfo().Mode()
+			if mode&0o600 != 0o600 {
+				mode = 0o644 // Default to readable/writable by owner if unsafe
+			}
+
+			f, err := os.OpenFile(target, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, mode)
 			if err != nil {
 				return err
 			}
 
 			// copy over contents
 			if _, err := io.Copy(f, tr); err != nil {
+				f.Close()
 				return err
 			}
 
