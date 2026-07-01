@@ -3,7 +3,6 @@ package uploader
 import (
 	"bytes"
 	"fmt"
-	"io/ioutil"
 	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
@@ -30,7 +29,7 @@ func httpUploadMultiPart(s, p string) *http.Request {
 }
 
 func TestMultipleDirectory(t *testing.T) {
-	tempdir, _ := ioutil.TempDir("", "test-uploader")
+	tempdir, _ := os.MkdirTemp("", "test-uploader")
 	expectedSring := "HELLO MOTO"
 	targetPath := "a/foo/bar/moto.txt"
 
@@ -42,17 +41,17 @@ func TestMultipleDirectory(t *testing.T) {
 
 	context := e.NewContext(req, rec)
 
-	if assert.Nil(t, upload(context)) {
+	if assert.NoError(t, upload(context)) {
 		assert.Equal(t, http.StatusCreated, rec.Code)
 	}
 
-	dat, err := ioutil.ReadFile(filepath.Join(tempdir, targetPath))
-	assert.Nil(t, err)
-	assert.Equal(t, string(dat), expectedSring)
+	dat, err := os.ReadFile(filepath.Join(tempdir, targetPath)) //nolint:gosec // test path is controlled
+	assert.NoError(t, err)                                      //nolint:testifylint // require not vendored
+	assert.Equal(t, expectedSring, string(dat))
 }
 
 func TestUploaderSimple(t *testing.T) {
-	tempdir, _ := ioutil.TempDir("", "test-uploader")
+	tempdir, _ := os.MkdirTemp("", "test-uploader")
 	expectedSring := "HELLO SIMPLE MOTO"
 	targetPath := "moto.txt"
 
@@ -63,17 +62,17 @@ func TestUploaderSimple(t *testing.T) {
 	directory = tempdir
 	context := e.NewContext(req, rec)
 
-	if assert.Nil(t, upload(context)) {
+	if assert.NoError(t, upload(context)) {
 		assert.Equal(t, http.StatusCreated, rec.Code)
 	}
 
-	dat, err := ioutil.ReadFile(filepath.Join(tempdir, targetPath))
-	assert.Nil(t, err)
-	assert.Equal(t, string(dat), expectedSring)
+	dat, err := os.ReadFile(filepath.Join(tempdir, targetPath)) //nolint:gosec // test path is controlled
+	assert.NoError(t, err)                                      //nolint:testifylint // require not vendored
+	assert.Equal(t, expectedSring, string(dat))
 }
 
 func TestUploaderTraversal(t *testing.T) {
-	tempdir, _ := ioutil.TempDir("", "test-uploader")
+	tempdir, _ := os.MkdirTemp("", "test-uploader")
 	expectedSring := "HELLO MOTO"
 	targetPath := "../../../../../../../../../../etc/passwd"
 
@@ -94,13 +93,13 @@ func TestUploaderTraversal(t *testing.T) {
 }
 
 func TestUploaderDelete(t *testing.T) {
-	tempdir, _ := ioutil.TempDir("", "test-uploader")
+	tempdir, _ := os.MkdirTemp("", "test-uploader")
 	directory = tempdir
 	fpath := filepath.Join(tempdir, "foo.txt")
 
-	fp, err := os.Create(fpath)
-	assert.Nil(t, err)
-	fp.Close()
+	fp, err := os.Create(fpath) //nolint:gosec // test path is controlled
+	assert.NoError(t, err)     //nolint:testifylint // require not vendored
+	_ = fp.Close()
 
 	body := &bytes.Buffer{}
 	writer := multipart.NewWriter(body)
@@ -113,7 +112,7 @@ func TestUploaderDelete(t *testing.T) {
 	rec := httptest.NewRecorder()
 
 	context := e.NewContext(req, rec)
-	if assert.Nil(t, uploaderDelete(context)) {
+	if assert.NoError(t, uploaderDelete(context)) {
 		assert.Equal(t, http.StatusAccepted, rec.Code)
 		if _, err = os.Stat(fpath); err != nil {
 			assert.True(t, os.IsNotExist(err))
@@ -122,13 +121,13 @@ func TestUploaderDelete(t *testing.T) {
 }
 
 func TestDeleteFilesOlderThanOneDay(t *testing.T) {
-	tempdir, _ := ioutil.TempDir("", "test-uploader")
+	tempdir, _ := os.MkdirTemp("", "test-uploader")
 	directory = tempdir
 	fpath := filepath.Join(tempdir, "foo.txt")
 
-	fp, err := os.Create(fpath)
-	assert.Nil(t, err)
-	fp.Close()
+	fp, err := os.Create(fpath) //nolint:gosec // test path is controlled
+	assert.NoError(t, err)     //nolint:testifylint // require not vendored
+	_ = fp.Close()
 
 	timestamp := time.Now().Add(-(time.Duration(1) * 25 * time.Hour))
 	err = os.Chtimes(fpath, timestamp, timestamp)
@@ -148,7 +147,7 @@ func TestDeleteFilesOlderThanOneDay(t *testing.T) {
 	rec := httptest.NewRecorder()
 
 	context := e.NewContext(req, rec)
-	if assert.Nil(t, deleteOldFilesOfDir(context)) {
+	if assert.NoError(t, deleteOldFilesOfDir(context)) {
 		assert.Equal(t, http.StatusAccepted, rec.Code)
 		if _, err = os.Stat(fpath); err != nil {
 			assert.True(t, os.IsNotExist(err))
@@ -157,13 +156,13 @@ func TestDeleteFilesOlderThanOneDay(t *testing.T) {
 }
 
 func TestDeleteFilesOlderThanTwoDay(t *testing.T) {
-	tempdir, _ := ioutil.TempDir("", "test-uploader")
+	tempdir, _ := os.MkdirTemp("", "test-uploader")
 	directory = tempdir
 	fpath := filepath.Join(tempdir, "foo.txt")
 
-	fp, err := os.Create(fpath)
-	assert.Nil(t, err)
-	fp.Close()
+	fp, err := os.Create(fpath) //nolint:gosec // test path is controlled
+	assert.NoError(t, err)     //nolint:testifylint // require not vendored
+	_ = fp.Close()
 
 	timestamp := time.Now().Add(-(time.Duration(2) * 25 * time.Hour))
 	err = os.Chtimes(fpath, timestamp, timestamp)
@@ -183,7 +182,7 @@ func TestDeleteFilesOlderThanTwoDay(t *testing.T) {
 	rec := httptest.NewRecorder()
 
 	context := e.NewContext(req, rec)
-	if assert.Nil(t, deleteOldFilesOfDir(context)) {
+	if assert.NoError(t, deleteOldFilesOfDir(context)) {
 		assert.Equal(t, http.StatusAccepted, rec.Code)
 		if _, err = os.Stat(fpath); err != nil {
 			assert.True(t, os.IsNotExist(err))

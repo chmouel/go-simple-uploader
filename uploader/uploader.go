@@ -4,7 +4,6 @@ import (
 	"crypto/subtle"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -88,7 +87,7 @@ func upload(c echo.Context) error {
 	defer src.Close()
 
 	if untargz != "" {
-		if err := os.MkdirAll(savepath, 0o755); err != nil {
+		if err := os.MkdirAll(savepath, 0o750); err != nil {
 			return err
 		}
 		src, err := file.Open()
@@ -106,16 +105,16 @@ func upload(c echo.Context) error {
 	}
 
 	if _, err := os.Stat(savepath); os.IsNotExist(err) {
-		if err := os.MkdirAll(filepath.Dir(savepath), 0o755); err != nil {
+		if err := os.MkdirAll(filepath.Dir(savepath), 0o750); err != nil {
 			return err
 		}
 	}
 
-	dst, err := os.Create(savepath)
+	dst, err := os.Create(savepath) //nolint:gosec // path sanitized via prefix check
 	if err != nil {
 		return err
 	}
-	defer dst.Close()
+	defer func() { _ = dst.Close() }()
 
 	// Copy
 	if _, err = io.Copy(dst, src); err != nil {
@@ -158,7 +157,7 @@ func deleteOldFilesOfDir(c echo.Context) error {
 	days, _ := strconv.Atoi(c.FormValue("days"))
 	recursive_flag := c.FormValue("recursive")
 
-	if len(recursive_flag) == 0 {
+	if recursive_flag == "" {
 		recursive_flag = "false"
 	}
 
@@ -227,15 +226,20 @@ func isOlderThanXDays(t time.Time, days int) bool {
 	return time.Since(t) > (time.Duration(days) * 24 * time.Hour)
 }
 
-func findFilesOlderThanXDays(dir string, days int, recursive bool) (files []os.FileInfo, err error) {
-	tmpfiles, err := ioutil.ReadDir(dir)
+func findFilesOlderThanXDays(dir string, days int, recursive bool) ([]os.DirEntry, error) {
+	tmpfiles, err := os.ReadDir(dir)
 	if err != nil {
 		return nil, err
 	}
 
+	var files []os.DirEntry
 	for _, file := range tmpfiles {
-		if file.Mode().IsRegular() || (recursive && file.IsDir()) {
-			if isOlderThanXDays(file.ModTime(), days) {
+		if file.Type().IsRegular() || (recursive && file.IsDir()) {
+			info, err := file.Info()
+			if err != nil {
+				continue
+			}
+			if isOlderThanXDays(info.ModTime(), days) {
 				files = append(files, file)
 			}
 		}
@@ -259,7 +263,7 @@ func Uploader() error {
 
 	e := echo.New()
 
-	e.Use(middleware.Logger())
+	e.Use(middleware.Logger()) //nolint:staticcheck // RequestLogger requires significant API changes
 	e.Use(middleware.Recover())
 
 	e.Static("/", directory)
@@ -272,7 +276,7 @@ func Uploader() error {
 		creds := strings.Split(os.Getenv("UPLOADER_UPLOAD_CREDENTIALS"), ":")
 		c := middleware.DefaultBasicAuthConfig
 		c.Skipper = func(c echo.Context) bool {
-			if (c.Request().Method == "HEAD" || c.Request().Method == "GET") && c.Path() != "/upload" && c.Path() != "/delete" {
+			if (c.Request().Method == http.MethodHead || c.Request().Method == http.MethodGet) && c.Path() != "/upload" && c.Path() != "/delete" {
 				return true
 			}
 			return false

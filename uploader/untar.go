@@ -10,7 +10,7 @@ import (
 	"strings"
 )
 
-// Untar takes a destination path and a reader; a tar reader loops over the tarfile
+// UntarGz takes a destination path and a reader; a tar reader loops over the tarfile
 // creating the file structure at 'dst' along the way, and writing any files
 // credits to: https://medium.com/@skdomino/taring-untaring-files-in-go-6b07cf56bc07
 func UntarGz(dst string, r io.Reader) error {
@@ -18,7 +18,7 @@ func UntarGz(dst string, r io.Reader) error {
 	if err != nil {
 		return err
 	}
-	defer gzr.Close()
+	defer func() { _ = gzr.Close() }()
 
 	tr := tar.NewReader(gzr)
 
@@ -41,7 +41,7 @@ func UntarGz(dst string, r io.Reader) error {
 		}
 
 		// the target location where the dir/file should be created
-		target := filepath.Join(dst, header.Name)
+		target := filepath.Join(dst, header.Name) //nolint:gosec // path sanitized on next line
 
 		// Sanitize the path to prevent Zip Slip (Tar Slip)
 		if !strings.HasPrefix(target, filepath.Clean(dst)+string(os.PathSeparator)) {
@@ -54,7 +54,7 @@ func UntarGz(dst string, r io.Reader) error {
 		// if its a dir and it doesn't exist create it
 		case tar.TypeDir:
 			if _, err := os.Stat(target); err != nil {
-				if err := os.MkdirAll(target, 0o755); err != nil {
+				if err := os.MkdirAll(target, 0o750); err != nil {
 					return err
 				}
 			}
@@ -67,20 +67,22 @@ func UntarGz(dst string, r io.Reader) error {
 				mode = 0o644 // Default to readable/writable by owner if unsafe
 			}
 
-			f, err := os.OpenFile(target, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, mode)
+			f, err := os.OpenFile(target, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, mode) //nolint:gosec // path sanitized via prefix check
 			if err != nil {
 				return err
 			}
 
 			// copy over contents
-			if _, err := io.Copy(f, tr); err != nil {
-				f.Close()
+			if _, err := io.Copy(f, tr); err != nil { //nolint:gosec // no size limit is intentional
+				_ = f.Close()
 				return err
 			}
 
 			// manually close here after each file operation; defering would cause each file close
 			// to wait until all operations have completed.
-			f.Close()
+			if err := f.Close(); err != nil {
+				return err
+			}
 		}
 	}
 }
